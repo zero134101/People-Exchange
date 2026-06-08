@@ -2,29 +2,24 @@ import NextAuth from "next-auth"
 import DiscordProvider from "next-auth/providers/discord"
 import { connectDB } from "./db"
 import { User } from "@/models/User"
-import { INITIAL_KRW } from "./constants"
-
-interface DiscordProfile {
-  id: string
-  username: string
-  global_name?: string
-  avatar?: string
-}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  session: { strategy: "jwt" },
   providers: [
     DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
+      clientId: process.env.AUTH_DISCORD_ID ?? process.env.DISCORD_CLIENT_ID!,
+      clientSecret: process.env.AUTH_DISCORD_SECRET ?? process.env.DISCORD_CLIENT_SECRET!,
       authorization: { params: { scope: "identify" } },
     }),
   ],
   callbacks: {
     async signIn({ account, profile }) {
       try {
-        if (account?.provider !== "discord") return false
+        if (account?.provider !== "discord" || !profile) return false
 
-        const p = profile as unknown as DiscordProfile
+        const p = profile as { id: string; username: string; global_name?: string; avatar?: string }
         if (!p?.id) return false
 
         await connectDB()
@@ -34,19 +29,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             discordId: p.id,
             username: p.global_name || p.username || "Unknown",
             avatar: p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : "",
-            krwBalance: INITIAL_KRW,
+            krwBalance: 10,
             joinedAt: new Date(),
           })
         } else {
-          await User.updateOne(
-            { discordId: p.id },
-            {
-              $set: {
-                username: p.global_name || p.username || existing.username,
-                avatar: p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : existing.avatar,
-              },
-            }
-          )
+          existing.username = p.global_name || p.username || existing.username
+          existing.avatar = p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : existing.avatar
+          await existing.save()
         }
         return true
       } catch (error) {
@@ -55,7 +44,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token?.sub) {
         try {
           await connectDB()
           const user = await User.findOne({ discordId: token.sub })
