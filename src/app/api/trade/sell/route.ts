@@ -6,8 +6,7 @@ import { Stock } from "@/models/Stock"
 import { Holding } from "@/models/Holding"
 import { Transaction } from "@/models/Transaction"
 import { calculateStockPrice } from "@/lib/price"
-
-const FEE_RATE = 0.005
+import { FEE_RATE } from "@/lib/constants"
 
 export async function POST(req: Request) {
   const session = await auth()

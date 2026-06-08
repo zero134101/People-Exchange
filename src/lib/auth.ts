@@ -2,6 +2,7 @@ import NextAuth from "next-auth"
 import DiscordProvider from "next-auth/providers/discord"
 import { connectDB } from "./db"
 import { User } from "@/models/User"
+import { INITIAL_KRW } from "./constants"
 
 interface DiscordProfile {
   id: string
@@ -29,7 +30,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             discordId: p.id,
             username: p.global_name || p.username,
             avatar: p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : "",
-            krwBalance: 10,
+            krwBalance: INITIAL_KRW,
             joinedAt: new Date(),
           })
         } else {

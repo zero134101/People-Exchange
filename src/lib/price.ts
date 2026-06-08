@@ -36,7 +36,6 @@ export async function calculateStockPrice(stockId: string): Promise<number> {
     basePrice: rates?.basePrice ?? 1000,
   }
 
-  const metrics = stock.activityMetrics
   const today = new Date().toISOString().slice(0, 10)
 
   const recentLogs = await ActivityLog.find({

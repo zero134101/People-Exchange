@@ -67,7 +67,7 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {stocks.slice(0, 6).map((stock) => (
-              <Link key={stock._id} href={`/stocks/${stock.userId}`}>
+              <Link key={stock._id} href={`/stocks/${stock._id}`}>
                 <Card className="hover:border-green-500/50 transition-colors cursor-pointer h-full">
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between mb-2">

@@ -44,7 +44,7 @@ export default function RankingPage() {
         </TabsList>
         <TabsContent value="marketcap" className="space-y-3">
           {marketCapRanking.map((stock, i) => (
-            <Link key={stock._id} href={`/stocks/${stock.userId}`}>
+            <Link key={stock._id} href={`/stocks/${stock._id}`}>
               <Card className="hover:border-green-500/50 transition-colors cursor-pointer">
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
