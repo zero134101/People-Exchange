@@ -21,14 +21,18 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async signIn({ account, profile }) {
-      if (account?.provider === "discord" && profile) {
+      try {
+        if (account?.provider !== "discord") return false
+
         const p = profile as unknown as DiscordProfile
+        if (!p?.id) return false
+
         await connectDB()
         const existing = await User.findOne({ discordId: p.id })
         if (!existing) {
           await User.create({
             discordId: p.id,
-            username: p.global_name || p.username,
+            username: p.global_name || p.username || "Unknown",
             avatar: p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : "",
             krwBalance: INITIAL_KRW,
             joinedAt: new Date(),
@@ -38,25 +42,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             { discordId: p.id },
             {
               $set: {
-                username: p.global_name || p.username,
-                avatar: p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : "",
+                username: p.global_name || p.username || existing.username,
+                avatar: p.avatar ? `https://cdn.discordapp.com/avatars/${p.id}/${p.avatar}.png` : existing.avatar,
               },
             }
           )
         }
         return true
+      } catch (error) {
+        console.error("Sign in error:", error)
+        return false
       }
-      return false
     },
     async session({ session, token }) {
       if (session.user) {
-        await connectDB()
-        const user = await User.findOne({ discordId: token.sub })
-        if (user) {
-          session.user.id = user._id.toString()
-          session.user.discordId = user.discordId
-          session.user.isAdmin = user.isAdmin
-          session.user.krwBalance = user.krwBalance
+        try {
+          await connectDB()
+          const user = await User.findOne({ discordId: token.sub })
+          if (user) {
+            session.user.id = user._id.toString()
+            session.user.discordId = user.discordId
+            session.user.isAdmin = user.isAdmin
+            session.user.krwBalance = user.krwBalance
+          }
+        } catch (error) {
+          console.error("Session error:", error)
         }
       }
       return session
